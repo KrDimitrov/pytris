@@ -118,19 +118,25 @@ class Tetromino:
         self.cy += moveBy
         
     def rotate(self):
-        print("BEFORE", len(self.points))
         self.points = list(map(lambda point: (-(point[1] - self.cy) + self.cx , (point[0] - self.cx) +self.cy), self.points))
-        print("AFTER", len(self.points))
 
 
 
 tetrominoesOnScreen = []
 
+timeSiceLastMove = 0
 def render():
+    global timeSiceLastMove
     screen.fill((0, 0, 0))
-    print(len(tetrominoesOnScreen))
     for tetro in tetrominoesOnScreen:
-        tetro.move()
+        if not tetro.stuck: 
+            if (timeSiceLastMove > 1500):
+                tetro.move()
+                timeSiceLastMove = 0
+                print(timeSiceLastMove)
+            else:
+                timeSiceLastMove += clock.get_time()
+                print(timeSiceLastMove)
         #for rect in tetro.rects:
             #pygame.draw.rect(screen, (0, 0, 255), rect)
         pygame.draw.polygon(screen, (0,255,0), tetro.points)
@@ -138,6 +144,7 @@ def render():
         pygame.draw.circle(screen, (255, 0, 0), (int(tetro.cx), int(tetro.cy)), 4)
     pygame.draw.line(screen, (255, 255, 255), (0, borderLineHeight), (width, borderLineHeight)) 
     pygame.display.flip()
+    clock.tick(60)
     pass
 
 
@@ -167,4 +174,3 @@ while 1:
                 rotateKeyPressed()
     render()
     
-    clock.tick(1)
