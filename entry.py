@@ -4,9 +4,15 @@ from enum import Enum
 import random
 from math import sin, cos
 
-size = width, height = 420, 640
-
+import vmath
+import collision
+# 21x10
 pygame.init()
+
+## TETRONIMONES SIZES
+BLOCK_SIZE = 30 ## Square. Change this to upsacle?
+
+size = width, height = 10*BLOCK_SIZE, (21*BLOCK_SIZE)+100
 screen = pygame.display.set_mode(size)
 clock = pygame.time.Clock()
 rect = pygame.Rect(0, 0, 100, 60)
@@ -14,11 +20,7 @@ rect = pygame.Rect(0, 0, 100, 60)
 # line below whitch we desiplay info and shit. blocks should not pass this line. 
 borderLineHeight = height-100
 
-SPAWN_POS = (width/2, 0)
-
-## TETRONIMONES SIZES
-BLOCK_SIZE = 20 ## Square. Change this to upsacle?
-
+SPAWN_POS = (5*BLOCK_SIZE, 0)
 class Tetrominoes(Enum):
     I = 1
     O = 2
@@ -34,6 +36,7 @@ class Tetromino:
     C = cos(90)
     def __init__(self, shape):
         self.stuck = False
+        self.vecs = []
 
         if shape == Tetrominoes.I:
             self.points = [
@@ -43,7 +46,7 @@ class Tetromino:
                 (SPAWN_POS[0]-((4*BLOCK_SIZE)/2), SPAWN_POS[1]+BLOCK_SIZE),
             ]
             self.cx = SPAWN_POS[0]
-            self.cy = SPAWN_POS[1]+(BLOCK_SIZE/2)
+            self.cy = SPAWN_POS[1]
         elif shape == Tetrominoes.O:
             self.points = [
                 (SPAWN_POS[0]-((2*BLOCK_SIZE)/2), SPAWN_POS[1]),
@@ -55,17 +58,19 @@ class Tetromino:
             self.cy = SPAWN_POS[1]+(BLOCK_SIZE)
         elif shape == Tetrominoes.T:
             self.points = [
-                (SPAWN_POS[0]-((3*BLOCK_SIZE)/2), SPAWN_POS[1]),
-                (SPAWN_POS[0]+((3*BLOCK_SIZE)/2), SPAWN_POS[1]),
-                (SPAWN_POS[0]+((3*BLOCK_SIZE)/2), SPAWN_POS[1]+BLOCK_SIZE),
-                (SPAWN_POS[0]+((1*BLOCK_SIZE)/2), SPAWN_POS[1]+BLOCK_SIZE),
-                (SPAWN_POS[0]+((1*BLOCK_SIZE)/2), SPAWN_POS[1]+2*BLOCK_SIZE),
-                (SPAWN_POS[0]-((1*BLOCK_SIZE)/2), SPAWN_POS[1]+2*BLOCK_SIZE),
-                (SPAWN_POS[0]-((1*BLOCK_SIZE)/2), SPAWN_POS[1]+BLOCK_SIZE),
-                (SPAWN_POS[0]-((3*BLOCK_SIZE)/2), SPAWN_POS[1]+BLOCK_SIZE),
+                (SPAWN_POS[0]-((2*BLOCK_SIZE)), SPAWN_POS[1]),
+                (SPAWN_POS[0]+((1*BLOCK_SIZE)), SPAWN_POS[1]),
+                (SPAWN_POS[0]+((1*BLOCK_SIZE)), SPAWN_POS[1]+BLOCK_SIZE),
+                (SPAWN_POS[0], SPAWN_POS[1]+BLOCK_SIZE),
+                (SPAWN_POS[0], SPAWN_POS[1]+2*BLOCK_SIZE),
+                (SPAWN_POS[0]-(1*BLOCK_SIZE), SPAWN_POS[1]+2*BLOCK_SIZE),
+                (SPAWN_POS[0]-(1*BLOCK_SIZE), SPAWN_POS[1]+BLOCK_SIZE),
+                (SPAWN_POS[0]-(2*BLOCK_SIZE), SPAWN_POS[1]+BLOCK_SIZE),
+
             ]
-            self.cx = SPAWN_POS[0]
-            self.cy = abs(SPAWN_POS[1]-(SPAWN_POS[1]+2*BLOCK_SIZE))/2
+            self.cx = SPAWN_POS[0]-(BLOCK_SIZE/2)
+            self.cy = SPAWN_POS[1]+(BLOCK_SIZE/2)
+            #self.cy = abs(SPAWN_POS[1]-(SPAWN_POS[1]+2*BLOCK_SIZE))/2
         elif shape == Tetrominoes.J:
             self.rects = [pygame.Rect(SPAWN_POS[0]-((3*BLOCK_SIZE)/2), SPAWN_POS[1], 3*BLOCK_SIZE, BLOCK_SIZE),
             pygame.Rect(SPAWN_POS[0]+((1*BLOCK_SIZE)/2), BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)]
@@ -101,7 +106,7 @@ class Tetromino:
     ## moves the tetro one tick down
     def move(self):
         if self.stuck: return
-        moveBy = 20
+        moveBy = BLOCK_SIZE
         otherTetrosOnScreen = list(filter(lambda tetro: tetro!=self, tetrominoesOnScreen))
 
         for point in self.points: 
@@ -115,12 +120,25 @@ class Tetromino:
                     tetrominoesOnScreen.append(Tetromino(Tetrominoes.I))
                     break
         self.points = list(map(lambda point: (point[0], point[1] + moveBy), self.points))
+        
         self.cy += moveBy
         
+        for otherTetro in otherTetrosOnScreen:
+            if collision.checkCollision(self.points, otherTetro.points):
+                print("COLLISIONNEN")
+                self.stuck = True
+                tetrominoesOnScreen.append(Tetromino(Tetrominoes.I))
     def rotate(self):
-        self.points = list(map(lambda point: (-(point[1] - self.cy) + self.cx , (point[0] - self.cx) +self.cy), self.points))
-
-
+        newpoints = list(map(lambda point: (-(point[1] - self.cy) + self.cx , (point[0] - self.cx) +self.cy), self.points))
+        #print(newpoints)
+        #newpoints = list(map(lambda point: (round(point[0]/BLOCK_SIZE)*BLOCK_SIZE, round(point[1]/BLOCK_SIZE)*BLOCK_SIZE), newpoints))
+       # print(newpoints)
+        otherTetrosOnScreen = list(filter(lambda tetro: tetro!=self, tetrominoesOnScreen))
+        
+        for otherTetro in otherTetrosOnScreen:
+            if collision.checkCollision(newpoints, otherTetro.points):
+                return
+        self.points = newpoints
 
 tetrominoesOnScreen = []
 
@@ -128,15 +146,21 @@ timeSiceLastMove = 0
 def render():
     global timeSiceLastMove
     screen.fill((0, 0, 0))
+
+    for i in range(0, width, BLOCK_SIZE):
+        pygame.draw.line(screen, (180,180,180), (i, 0), (i, borderLineHeight))
+    for i in range(0, height, BLOCK_SIZE):
+        pygame.draw.line(screen, (180, 180, 180), (0, i), (width, i))
+
+
+    # draw tetros
     for tetro in tetrominoesOnScreen:
         if not tetro.stuck: 
             if (timeSiceLastMove > 1500):
                 tetro.move()
                 timeSiceLastMove = 0
-                print(timeSiceLastMove)
             else:
                 timeSiceLastMove += clock.get_time()
-                print(timeSiceLastMove)
         #for rect in tetro.rects:
             #pygame.draw.rect(screen, (0, 0, 255), rect)
         pygame.draw.polygon(screen, (0,255,0), tetro.points)
