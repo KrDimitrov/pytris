@@ -21,6 +21,10 @@ rect = pygame.Rect(0, 0, 100, 60)
 borderLineHeight = height-100
 
 SPAWN_POS = (5*BLOCK_SIZE, 0)
+
+# Points to the current moving Tetromino
+CurrentTetro = None
+
 class Tetrominoes(Enum):
     I = 1
     O = 2
@@ -104,7 +108,8 @@ class Tetromino:
         #print(self.HEIGHT)
 
     ## moves the tetro one tick down
-    def move(self):
+    def drop(self):
+        # TODO add a fast drop function...
         if self.stuck: return
         moveBy = BLOCK_SIZE
         otherTetrosOnScreen = list(filter(lambda tetro: tetro!=self, tetrominoesOnScreen))
@@ -115,9 +120,7 @@ class Tetromino:
                 moveBy = heightTillBorder
                 if heightTillBorder == 0:
                     self.stuck = True
-                    ## DEBUG: spawn a new tetro
-                    #tetrominoesOnScreen.append(Tetromino(Tetrominoes(random.randrange(6)+1)))
-                    tetrominoesOnScreen.append(Tetromino(Tetrominoes.I))
+                    Tetromino.spawn()
                     break
         self.points = list(map(lambda point: (point[0], point[1] + moveBy), self.points))
         
@@ -127,7 +130,7 @@ class Tetromino:
             if collision.checkCollision(self.points, otherTetro.points):
                 print("COLLISIONNEN")
                 self.stuck = True
-                tetrominoesOnScreen.append(Tetromino(Tetrominoes.I))
+                Tetromino.spawn()
     def rotate(self):
         newpoints = list(map(lambda point: (-(point[1] - self.cy) + self.cx , (point[0] - self.cx) +self.cy), self.points))
         #print(newpoints)
@@ -139,6 +142,18 @@ class Tetromino:
             if collision.checkCollision(newpoints, otherTetro.points):
                 return
         self.points = newpoints
+
+    # does this make sense? or should we spawn tetros in the constructor?
+    # spawning means the player takes controll over the movement
+    # TODO add RNG
+    @staticmethod
+    def spawn():
+        global CurrentTetro
+        tetro = Tetromino(Tetrominoes.I)
+        CurrentTetro = tetro
+        tetrominoesOnScreen.append(tetro)
+        
+
 
 tetrominoesOnScreen = []
 
@@ -158,7 +173,7 @@ def render():
     for tetro in tetrominoesOnScreen:
         if not tetro.stuck: 
             if (timeSiceLastMove > 1500):
-                tetro.move()
+                tetro.drop()
                 timeSiceLastMove = 0
             else:
                 timeSiceLastMove += clock.get_time()
@@ -175,20 +190,15 @@ def render():
 
 
 def rotateKeyPressed():
-    for tetro in tetrominoesOnScreen:
-        if tetro.stuck: pass
-        else:
-            tetro.rotate()
-            #print(tetro.cx)
-            #print(tetro.cy)
-            break
-
+    global CurrentTetro
+    CurrentTetro.rotate()
 #I = Tetromino(Tetrominoes(random.randrange(6)+1))
 I = Tetromino(Tetrominoes.T)
+CurrentTetro = I
 
 
+Tetromino.spawn()
 
-tetrominoesOnScreen.append(I)
 while 1:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
