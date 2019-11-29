@@ -131,6 +131,9 @@ class Tetromino:
                 print("COLLISIONNEN")
                 self.stuck = True
                 Tetromino.spawn()
+    def move(self,direction):
+        self.points = list(map(lambda point: (point[0] + BLOCK_SIZE * direction, point[1]), self.points))
+        self.cx += BLOCK_SIZE * direction 
     def rotate(self):
         newpoints = list(map(lambda point: (-(point[1] - self.cy) + self.cx , (point[0] - self.cx) +self.cy), self.points))
         #print(newpoints)
@@ -197,6 +200,12 @@ I = Tetromino(Tetrominoes.T)
 CurrentTetro = I
 
 
+# -1 for left, 1 for right
+def moveKeyPressed(direction):
+    global CurrentTetro
+    CurrentTetro.move(direction)
+    pass
+
 Tetromino.spawn()
 
 while 1:
@@ -207,5 +216,9 @@ while 1:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:
                 rotateKeyPressed()
+            elif event.key == pygame.K_a:
+                moveKeyPressed(-1)
+            elif event.key == pygame.K_d:
+                moveKeyPressed(1)
     render()
     
