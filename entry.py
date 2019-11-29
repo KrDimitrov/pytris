@@ -11,7 +11,7 @@ pygame.init()
 
 ## TETRONIMONES SIZES
 BLOCK_SIZE = 30 ## Square. Change this to upsacle?
-
+GRID_COLOR = (82, 78, 78)
 size = width, height = 10*BLOCK_SIZE, (21*BLOCK_SIZE)+100
 screen = pygame.display.set_mode(size)
 clock = pygame.time.Clock()
@@ -147,10 +147,11 @@ def render():
     global timeSiceLastMove
     screen.fill((0, 0, 0))
 
+    # draw grid
     for i in range(0, width, BLOCK_SIZE):
-        pygame.draw.line(screen, (180,180,180), (i, 0), (i, borderLineHeight))
-    for i in range(0, height, BLOCK_SIZE):
-        pygame.draw.line(screen, (180, 180, 180), (0, i), (width, i))
+        pygame.draw.line(screen, GRID_COLOR, (i, 0), (i, borderLineHeight))
+    for i in range(0, borderLineHeight, BLOCK_SIZE):
+        pygame.draw.line(screen, GRID_COLOR, (0, i), (width, i))
 
 
     # draw tetros
