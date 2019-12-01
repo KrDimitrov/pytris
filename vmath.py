@@ -8,6 +8,14 @@ class Vector:
 
     def __str__(self):
         return f"Vector: ({self.posX}, {self.posY}) length: {self.magnitude()}"
+    def __iadd__(self, other):
+        self.posX += other.posX
+        self.posY += other.posY
+        return self
+    def __add__(self, other):
+        return Vector(self.posX + other.posX, self.posY + other.posY)
+    def __sub__(self, other):
+        return Vector(self.posX - other.posX, self.posY - other.posY)
     def magnitude(self):
         """Returns the magnitude/length of the vector"""
         return math.sqrt(self.posX*self.posX + self.posY * self.posY)
